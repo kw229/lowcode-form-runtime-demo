@@ -1,0 +1,69 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #f5f6f8;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.app-header {
+  height: auto;
+  padding: 24px 32px;
+  background: #fff;
+  border-bottom: 1px solid #eef0f3;
+}
+
+.app-header h3,
+.app-header .ant-typography {
+  margin: 0;
+}
+
+.app-content {
+  width: min(1320px, calc(100vw - 48px));
+  margin: 0 auto;
+  padding: 24px 0 40px;
+}
+
+.summary-row,
+.runtime-tabs {
+  margin-top: 16px;
+}
+
+.runtime-card {
+  margin-bottom: 16px;
+}
+
+.form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  width: 100%;
+  padding: 12px 0;
+  background: #f5f6f8;
+  border-top: 1px solid #eef0f3;
+}
+
+.table-form-item {
+  margin-bottom: 0;
+}
+
+.table-add-button {
+  margin-top: 12px;
+}
+
+.code-panel {
+  max-height: 520px;
+  margin: 0;
+  overflow: auto;
+  padding: 14px;
+  background: #111827;
+  color: #d1d5db;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+}
