@@ -1,7 +1,40 @@
-import React, { useEffect, useMemo } from 'react'
+import React, {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo
+} from 'react'
 import { Button, Card, Col, Form, Row, Space, Table } from 'antd'
 import dayjs from 'dayjs'
 import { fieldRules, renderFormField } from './fieldRuntime.jsx'
+
+function createPrimaryKey(prefix = 'row') {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return crypto.randomUUID()
+  }
+  return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`
+}
+
+function createEmptyTableRow(section) {
+  if (!section.rowKey) {
+    return {}
+  }
+  return {
+    [section.rowKey]: createPrimaryKey(section.name)
+  }
+}
+
+function ensureTableRowKey(row, section) {
+  if (!section.rowKey || row[section.rowKey]) {
+    return row
+  }
+  return {
+    ...row,
+    [section.rowKey]: createPrimaryKey(section.name)
+  }
+}
 
 function prepareInitialValues(value, schema) {
   const nextValues = { ...value }
@@ -19,7 +52,7 @@ function prepareInitialValues(value, schema) {
     }
     if (section.type === 'table') {
       nextValues[section.name] = (nextValues[section.name] || []).map((row) => {
-        const nextRow = { ...row }
+        const nextRow = ensureTableRowKey({ ...row }, section)
         section.columns.forEach((field) => {
           if (field.type === 'date' && nextRow[field.name]) {
             nextRow[field.name] = dayjs(nextRow[field.name])
@@ -50,7 +83,7 @@ function normalizeValues(values, schema) {
     }
     if (section.type === 'table') {
       nextValues[section.name] = (nextValues[section.name] || []).map((row) => {
-        const nextRow = { ...row }
+        const nextRow = ensureTableRowKey({ ...row }, section)
         section.columns.forEach((field) => {
           const value = nextRow[field.name]
           if (field.type === 'date' && value?.format) {
@@ -64,7 +97,7 @@ function normalizeValues(values, schema) {
   return nextValues
 }
 
-function CardSection({ section }) {
+const CardSection = memo(function CardSection({ section }) {
   const columns = section.columns || 2
 
   return (
@@ -93,29 +126,33 @@ function CardSection({ section }) {
       </Row>
     </Card>
   )
-}
+})
 
-function TableSection({ section }) {
-  const columns = section.columns.map((field) => ({
-    title: field.label,
-    dataIndex: field.name,
-    key: field.name,
-    width: field.width || 180,
-    render: (_, row, rowIndex) => (
-      <Form.Item
-        name={[section.name, rowIndex, field.name]}
-        rules={fieldRules(field)}
-        valuePropName={
-          field.type === 'switch' || field.type === 'checkbox'
-            ? 'checked'
-            : 'value'
-        }
-        className="table-form-item"
-      >
-        {renderFormField(field)}
-      </Form.Item>
-    )
-  }))
+const TableSection = memo(function TableSection({ section }) {
+  const columns = useMemo(
+    () =>
+      section.columns.map((field) => ({
+        title: field.label,
+        dataIndex: field.name,
+        key: field.name,
+        width: field.width || 180,
+        render: (_, row, rowIndex) => (
+          <Form.Item
+            name={[section.name, rowIndex, field.name]}
+            rules={fieldRules(field)}
+            valuePropName={
+              field.type === 'switch' || field.type === 'checkbox'
+                ? 'checked'
+                : 'value'
+            }
+            className="table-form-item"
+          >
+            {renderFormField(field)}
+          </Form.Item>
+        )
+      })),
+    [section]
+  )
 
   return (
     <Card title={section.title} className="runtime-card">
@@ -141,7 +178,10 @@ function TableSection({ section }) {
               dataSource={rows}
               scroll={{ x: 'max-content' }}
             />
-            <Button className="table-add-button" onClick={() => add({})}>
+            <Button
+              className="table-add-button"
+              onClick={() => add(createEmptyTableRow(section))}
+            >
               Add row
             </Button>
           </>
@@ -149,15 +189,32 @@ function TableSection({ section }) {
       </Form.List>
     </Card>
   )
-}
+})
 
-export default function DynamicForm({ schema, value, onSubmit }) {
+function DynamicForm({ schema, value, onSubmit }, ref) {
   const [form] = Form.useForm()
   const initialValues = useMemo(() => prepareInitialValues(value, schema), [schema, value])
 
   useEffect(() => {
     form.setFieldsValue(initialValues)
   }, [form, initialValues])
+
+  const getNormalizedValues = useCallback(
+    () => normalizeValues(form.getFieldsValue(true), schema),
+    [form, schema]
+  )
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      submit: () => form.submit(),
+      reset: () => form.resetFields(),
+      getValues: getNormalizedValues,
+      setValues: (nextValues) => form.setFieldsValue(prepareInitialValues(nextValues, schema)),
+      validate: () => form.validateFields()
+    }),
+    [form, getNormalizedValues, schema]
+  )
 
   return (
     <Form
@@ -181,3 +238,5 @@ export default function DynamicForm({ schema, value, onSubmit }) {
     </Form>
   )
 }
+
+export default forwardRef(DynamicForm)

@@ -16,8 +16,23 @@ This project was rebuilt as a clean portfolio sample. It uses basic Ant Design c
 - Editable form runtime with normalized submit payload
 - Read-only detail renderer using the same schema
 - Live schema and payload preview
+- Ref-based runtime API for submit, reset, validation, value reads, and value writes
+- Component-owned field state that avoids mirroring every field change into parent React state
+- Memoized section/table rendering to reduce unnecessary updates in large forms
+- Autonomous field components that can be extended without changing the page-level renderer
+- Editable sub-tables with automatic stable primary key generation for new rows
 - Basic field support: text, textarea, number, amount, percentage, select, multiple select, checkbox, switch, radio, date, date range, and table rows
 - Portfolio-friendly CRM sample data in English
+
+## Runtime Highlights
+
+This demo is designed around the kind of problems that appear in large CRM and low-code forms:
+
+- **High-performance form interaction**: field values stay inside Ant Design Form's internal store during editing, so the parent page does not need to re-render on every keystroke.
+- **Ref-oriented control mode**: callers can use a component ref to submit, validate, reset, read values, or patch values without turning the entire form into parent-controlled React state.
+- **Component autonomy**: each field type owns its rendering and display behavior through the field runtime layer, making new simple field types easy to add.
+- **Large-node friendliness**: sections and table column definitions are memoized, which keeps repeated form blocks steadier when the schema grows.
+- **Stable dynamic rows**: table sections can define a `rowKey`, and newly added rows receive a generated primary key automatically.
 
 ## Tech Stack
 
@@ -41,17 +56,23 @@ yarn build
 ## Example Usage
 
 ```jsx
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import DynamicForm from './components/DynamicForm.jsx'
 import DynamicDetail from './components/DynamicDetail.jsx'
 import { formSchema, initialRecord } from './schema/sampleSchema.js'
 
 function Demo() {
+  const formRef = useRef(null)
   const [record, setRecord] = useState(initialRecord)
 
   return (
     <>
-      <DynamicForm schema={formSchema} value={record} onSubmit={setRecord} />
+      <DynamicForm
+        ref={formRef}
+        schema={formSchema}
+        value={record}
+        onSubmit={setRecord}
+      />
       <DynamicDetail schema={formSchema} value={record} />
     </>
   )
