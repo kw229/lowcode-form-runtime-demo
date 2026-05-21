@@ -2,6 +2,8 @@
 
 A public-safe React demo for rendering CRM-style forms and detail pages from a JSON schema.
 
+Live Demo: https://lowcode-form-runtime-demo.vercel.app/
+
 This project was rebuilt as a clean portfolio sample. It uses basic Ant Design components only and does not include company UI styles, production API endpoints, proprietary business data, query scheme configuration, formula designers, or module-specific runtime dependencies.
 
 ## Screenshots
